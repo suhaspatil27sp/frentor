@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/database';
+import { supabase } from '@/lib/database';
 
 export async function GET() {
   try {
     // Check database connectivity
-    const dbHealthy = await db.healthCheck();
+    const dbHealthy = await supabase.healthCheck();
     
     if (!dbHealthy) {
       return NextResponse.json(

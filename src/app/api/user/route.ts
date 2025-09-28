@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { db } from '@/lib/database';
+import { supabase } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Store user in database
-    await db.createUser(newUser);
+    await supabase.createUser(newUser);
 
     return NextResponse.json(newUser, { status: 201 });
 
@@ -96,8 +96,8 @@ export async function GET(request: NextRequest) {
     }
 
     const user = userId 
-      ? await db.getUserById(userId)
-      : await db.getUserByUsername(username!);
+      ? await supabase.getUserById(userId)
+      : await supabase.getUserByUsername(username!);
 
     if (!user) {
       return NextResponse.json(

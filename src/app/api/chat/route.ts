@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { db } from '@/lib/database';
+import { supabase } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       token_count: message.token_count || message.message_text.split(' ').length
     };
 
-    await db.storeMessage(userMessage);
+    await supabase.storeMessage(userMessage);
 
     // Generate AI response (placeholder logic)
     const aiResponse = await generateAIResponse(message.message_text, user, session);
@@ -44,10 +44,10 @@ export async function POST(request: NextRequest) {
       token_count: aiResponse.split(' ').length
     };
 
-    await db.storeMessage(botMessage);
+    await supabase.storeMessage(botMessage);
 
     // Update session activity
-    await db.updateSessionActivity(session.session_id);
+    await supabase.updateSessionActivity(session.session_id);
 
     return NextResponse.json({
       userMessage,

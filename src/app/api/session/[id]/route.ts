@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/database';
+import { supabase } from '@/lib/database';
 
 export async function PATCH(
   request: NextRequest,
@@ -10,7 +10,7 @@ export async function PATCH(
     const body = await request.json();
 
     // Check if session exists
-    const session = await db.getSessionById(sessionId);
+    const session = await supabase.getSessionById(sessionId);
     if (!session) {
       return NextResponse.json(
         { error: 'Session not found' },
@@ -20,7 +20,7 @@ export async function PATCH(
 
     // Handle session ending
     if (body.end_reason) {
-      const updatedSession = await db.endSession(sessionId, body.end_reason);
+      const updatedSession = await supabase.endSession(sessionId, body.end_reason);
       return NextResponse.json(updatedSession);
     }
 
@@ -39,7 +39,7 @@ export async function PATCH(
       updates.auto_extended_count = body.auto_extended_count;
     }
 
-    const updatedSession = await db.updateSession(sessionId, updates);
+    const updatedSession = await supabase.updateSession(sessionId, updates);
     return NextResponse.json(updatedSession);
 
   } catch (error) {
@@ -59,7 +59,7 @@ export async function DELETE(
     const sessionId = params.id;
 
     // Check if session exists
-    const session = await db.getSessionById(sessionId);
+    const session = await supabase.getSessionById(sessionId);
     if (!session) {
       return NextResponse.json(
         { error: 'Session not found' },
@@ -68,7 +68,7 @@ export async function DELETE(
     }
 
     // End the session instead of deleting (for data integrity)
-    const endedSession = await db.endSession(sessionId, 'deleted');
+    const endedSession = await supabase.endSession(sessionId, 'deleted');
     
     return NextResponse.json({ 
       message: 'Session ended successfully',
