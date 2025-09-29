@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '@/lib/database';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
