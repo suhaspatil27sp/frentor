@@ -3,14 +3,21 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET() {
   try {
-    // Check database connectivity
-    const dbHealthy = await supabase.healthCheck();
+    // Check database connectivity by running a simple query
+    const { data, error } = await supabase
+      .from('users')
+      .select('count')
+      .limit(1)
+      .single();
+    
+    const dbHealthy = !error;
     
     if (!dbHealthy) {
       return NextResponse.json(
         { 
           status: 'unhealthy',
           message: 'Database connection failed',
+          error: error?.message,
           timestamp: new Date().toISOString()
         },
         { status: 503 }
@@ -32,6 +39,7 @@ export async function GET() {
       { 
         status: 'unhealthy',
         message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       },
       { status: 500 }
