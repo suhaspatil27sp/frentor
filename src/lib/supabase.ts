@@ -11,6 +11,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Main client for frontend operations
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// Export as db for compatibility with existing code
+export const db = supabase
+
 // Helper functions
 export const getCurrentUser = async () => {
   const { data: { user }, error } = await supabase.auth.getUser()
