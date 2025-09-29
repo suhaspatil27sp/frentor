@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '@/lib/database';
+import { supabase } from '@/lib/supabase'; // ✅ Fixed import path
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,9 +27,22 @@ export async function POST(request: NextRequest) {
       token_count: message.token_count || message.message_text.split(' ').length
     };
 
-    await supabase.storeMessage(userMessage);
+    // ✅ Fixed: Use proper Supabase syntax instead of storeMessage
+    const { data: storedUserMessage, error: userMessageError } = await supabase
+      .from('messages') // Make sure this matches your table name
+      .insert(userMessage)
+      .select()
+      .single();
 
-    // Generate AI response (placeholder logic)
+    if (userMessageError) {
+      console.error('Error storing user message:', userMessageError);
+      return NextResponse.json(
+        { error: 'Failed to store user message' },
+        { status: 500 }
+      );
+    }
+
+    // Generate AI response
     const aiResponse = await generateAIResponse(message.message_text, user, session);
     
     // Store bot response in database
@@ -44,14 +57,38 @@ export async function POST(request: NextRequest) {
       token_count: aiResponse.split(' ').length
     };
 
-    await supabase.storeMessage(botMessage);
+    // ✅ Fixed: Use proper Supabase syntax instead of storeMessage
+    const { data: storedBotMessage, error: botMessageError } = await supabase
+      .from('messages') // Make sure this matches your table name
+      .insert(botMessage)
+      .select()
+      .single();
 
-    // Update session activity
-    await supabase.updateSessionActivity(session.session_id);
+    if (botMessageError) {
+      console.error('Error storing bot message:', botMessageError);
+      return NextResponse.json(
+        { error: 'Failed to store bot message' },
+        { status: 500 }
+      );
+    }
+
+    // ✅ Fixed: Update session activity with proper Supabase syntax
+    const { error: sessionUpdateError } = await supabase
+      .from('sessions') // Make sure this matches your table name
+      .update({ 
+        last_message_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('session_id', session.session_id);
+
+    if (sessionUpdateError) {
+      console.error('Error updating session:', sessionUpdateError);
+      // Don't fail the request for session update errors
+    }
 
     return NextResponse.json({
-      userMessage,
-      botMessage,
+      userMessage: storedUserMessage,
+      botMessage: storedBotMessage,
       session: {
         ...session,
         last_message_at: new Date().toISOString()
@@ -69,7 +106,7 @@ export async function POST(request: NextRequest) {
 
 async function generateAIResponse(userMessage: string, user: any, session: any): Promise<string> {
   // This is a placeholder AI response generator
-  // In a real implementation, you would integrate with OpenAI, Claude, or another AI service
+  // In a real implementation, you would integrate with Gemini, OpenAI, or another AI service
   
   const responses = [
     `That's a great question, ${user.first_name}! Let me help you understand that better.`,
