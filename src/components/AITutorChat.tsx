@@ -103,7 +103,7 @@ const AITutorChat: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [queuedMessages]);
 
   // Initialize user session
   useEffect(() => {
@@ -119,25 +119,15 @@ const AITutorChat: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Load queued messages from localStorage
+  // Load queued messages from memory (not localStorage)
   const loadQueuedMessages = (): QueuedMessage[] => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const queued = localStorage.getItem('queuedMessages');
-      return queued ? JSON.parse(queued) : [];
-    } catch {
-      return [];
-    }
+    // Messages are now stored in state only, not localStorage
+    return [];
   };
 
-  // Save queued messages to localStorage
+  // Save queued messages (no-op for now since we're using state)
   const saveQueuedMessages = (queued: QueuedMessage[]) => {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem('queuedMessages', JSON.stringify(queued));
-    } catch (error) {
-      console.error('Failed to save queued messages:', error);
-    }
+    // Messages are stored in state, no need for localStorage
   };
 
   const initializeUser = () => {
@@ -146,7 +136,7 @@ const AITutorChat: React.FC = () => {
     // Load queued messages
     setQueuedMessages(loadQueuedMessages());
     
-    let savedUser = localStorage.getItem('aiTutorUser');
+    const savedUser = window.localStorage.getItem('aiTutorUser');
     
     if (!savedUser) {
       setShowUserSetup(true);
@@ -163,43 +153,43 @@ const AITutorChat: React.FC = () => {
   };
 
   const createUser = async (userData: any) => {
-  try {
-    // Create user via API to get database-generated ID
-    const response = await fetch(USER_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username: userData.username || `student_${Date.now()}`,
-        first_name: userData.first_name,
-        last_name: userData.last_name || '',
-        age: userData.age,
-        grade_level: userData.grade_level,
-        education_board: userData.education_board || 'OTHER',
-        preferred_language: 'en',
-        timezone: 'Asia/Kolkata',
-        facts_opt_in: true,
-        onboarding_completed: true
-      })
-    });
+    try {
+      // Create user via API to get database-generated ID
+      const response = await fetch(USER_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: userData.username || `student_${Date.now()}`,
+          first_name: userData.first_name,
+          last_name: userData.last_name || '',
+          age: userData.age,
+          grade_level: userData.grade_level,
+          education_board: userData.education_board || 'OTHER',
+          preferred_language: 'en',
+          timezone: 'Asia/Kolkata',
+          facts_opt_in: true,
+          onboarding_completed: true
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to create user');
-    }
+      if (!response.ok) {
+        throw new Error('Failed to create user');
+      }
 
-    const newUser = await response.json();
-    
-    setUser(newUser);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('aiTutorUser', JSON.stringify(newUser));
-    }
-    setShowUserSetup(false);
-    
-    initializeChat(newUser);
+      const newUser = await response.json();
+      
+      setUser(newUser);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('aiTutorUser', JSON.stringify(newUser));
+      }
+      setShowUserSetup(false);
+      
+      initializeChat(newUser);
     } catch (error) {
-    console.error('Error creating user:', error);
-    // TODO: Show error message to user
+      console.error('Error creating user:', error);
+      // TODO: Show error message to user
     }
   };
 
@@ -678,9 +668,13 @@ const AITutorChat: React.FC = () => {
               <div className="flex items-center space-x-2 text-sm text-gray-500">
                 <span>Hello {user.first_name}! Grade {user.grade_level} • {user.education_board}</span>
                 {isOnline ? (
-                  <Wifi className="w-4 h-4 text-green-500" title="Online" />
+                  <span title="Online">
+                    <Wifi className="w-4 h-4 text-green-500" />
+                  </span>
                 ) : (
-                  <WifiOff className="w-4 h-4 text-red-500" title="Offline - messages will be queued" />
+                  <span title="Offline - messages will be queued">
+                    <WifiOff className="w-4 h-4 text-red-500" />
+                  </span>
                 )}
               </div>
             </div>
@@ -709,7 +703,7 @@ const AITutorChat: React.FC = () => {
           <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-md p-2">
             <div className="flex items-center text-sm text-yellow-800">
               <WifiOff className="w-4 h-4 mr-2" />
-              You're offline. Messages will be sent when connection is restored.
+              You&apos;re offline. Messages will be sent when connection is restored.
             </div>
           </div>
         )}
