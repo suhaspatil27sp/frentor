@@ -1,3 +1,4 @@
+//src/app/api/session/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
@@ -10,8 +11,13 @@ export async function PATCH(
     const body = await request.json();
 
     // Check if session exists
-    const session = await supabase.getSessionById(sessionId);
-    if (!session) {
+    const { data: session, error: fetchError } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('session_id', sessionId)
+      .single();
+
+    if (fetchError || !session) {
       return NextResponse.json(
         { error: 'Session not found' },
         { status: 404 }
@@ -20,12 +26,28 @@ export async function PATCH(
 
     // Handle session ending
     if (body.end_reason) {
-      const updatedSession = await supabase.endSession(sessionId, body.end_reason);
+      const { data: updatedSession, error: updateError } = await supabase
+        .from('sessions')
+        .update({
+          is_active: false,
+          ended_at: new Date().toISOString(),
+          end_reason: body.end_reason
+        })
+        .eq('session_id', sessionId)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw updateError;
+      }
+
       return NextResponse.json(updatedSession);
     }
 
     // Handle other session updates
-    const updates: any = {};
+    const updates: any = {
+      last_message_at: new Date().toISOString()
+    };
     
     if (body.current_concept !== undefined) {
       updates.current_concept = body.current_concept;
@@ -39,7 +61,17 @@ export async function PATCH(
       updates.auto_extended_count = body.auto_extended_count;
     }
 
-    const updatedSession = await supabase.updateSession(sessionId, updates);
+    const { data: updatedSession, error: updateError } = await supabase
+      .from('sessions')
+      .update(updates)
+      .eq('session_id', sessionId)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
     return NextResponse.json(updatedSession);
 
   } catch (error) {
@@ -59,8 +91,13 @@ export async function DELETE(
     const sessionId = params.id;
 
     // Check if session exists
-    const session = await supabase.getSessionById(sessionId);
-    if (!session) {
+    const { data: session, error: fetchError } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('session_id', sessionId)
+      .single();
+
+    if (fetchError || !session) {
       return NextResponse.json(
         { error: 'Session not found' },
         { status: 404 }
@@ -68,7 +105,20 @@ export async function DELETE(
     }
 
     // End the session instead of deleting (for data integrity)
-    const endedSession = await supabase.endSession(sessionId, 'deleted');
+    const { data: endedSession, error: updateError } = await supabase
+      .from('sessions')
+      .update({
+        is_active: false,
+        ended_at: new Date().toISOString(),
+        end_reason: 'deleted'
+      })
+      .eq('session_id', sessionId)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
     
     return NextResponse.json({ 
       message: 'Session ended successfully',
