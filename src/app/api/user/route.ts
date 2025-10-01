@@ -1,4 +1,8 @@
 //src/app/api/user/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/lib/supabase';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -85,6 +89,55 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('User fetch error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { user_id, ...updates } = body;
+
+    if (!user_id) {
+      return NextResponse.json(
+        { error: 'user_id is required' },
+        { status: 400 }
+      );
+    }
+
+    // Check if user exists
+    const { data: existingUser, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('user_id', user_id)
+      .single();
+
+    if (fetchError || !existingUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update user
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('user_id', user_id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    return NextResponse.json(updatedUser);
+
+  } catch (error) {
+    console.error('User update error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
