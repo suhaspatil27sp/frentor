@@ -5,7 +5,6 @@ import { Send, Bot, User, RotateCcw, Settings, Wifi, WifiOff, RefreshCw, AlertCi
 
 interface User {
   user_id: string;
-  telegram_user_id?: number;
   username: string;
   first_name: string;
   last_name: string;
@@ -164,44 +163,43 @@ const AITutorChat: React.FC = () => {
   };
 
   const createUser = async (userData: any) => {
-    try {
-      // Create user via API to get database-generated ID
-      const response = await fetch(USER_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: userData.username || `student_${Date.now()}`,
-          first_name: userData.first_name,
-          last_name: userData.last_name || '',
-          age: userData.age,
-          grade_level: userData.grade_level,
-          education_board: userData.education_board || 'OTHER',
-          telegram_user_id: Date.now(), // Temporary for web users
-          preferred_language: 'en',
-          timezone: 'Asia/Kolkata',
-          facts_opt_in: true,
-          onboarding_completed: true
-        })
-      });
+  try {
+    // Create user via API to get database-generated ID
+    const response = await fetch(USER_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: userData.username || `student_${Date.now()}`,
+        first_name: userData.first_name,
+        last_name: userData.last_name || '',
+        age: userData.age,
+        grade_level: userData.grade_level,
+        education_board: userData.education_board || 'OTHER',
+        preferred_language: 'en',
+        timezone: 'Asia/Kolkata',
+        facts_opt_in: true,
+        onboarding_completed: true
+      })
+    });
 
-      if (!response.ok) {
-        throw new Error('Failed to create user');
-      }
+    if (!response.ok) {
+      throw new Error('Failed to create user');
+    }
 
-      const newUser = await response.json();
-      
-      setUser(newUser);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('aiTutorUser', JSON.stringify(newUser));
-      }
-      setShowUserSetup(false);
-      
-      initializeChat(newUser);
+    const newUser = await response.json();
+    
+    setUser(newUser);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('aiTutorUser', JSON.stringify(newUser));
+    }
+    setShowUserSetup(false);
+    
+    initializeChat(newUser);
     } catch (error) {
-      console.error('Error creating user:', error);
-      // TODO: Show error message to user
+    console.error('Error creating user:', error);
+    // TODO: Show error message to user
     }
   };
 
