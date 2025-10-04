@@ -2,12 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  experimental: {
-    appDir: true,
-  },
-  env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
-  },
+  // Remove experimental.appDir - it's no longer needed in Next.js 13+
+  // Remove the env property - it can interfere with NEXT_PUBLIC_ variables
 }
 
 module.exports = nextConfig
