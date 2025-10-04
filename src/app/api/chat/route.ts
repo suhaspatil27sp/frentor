@@ -1,13 +1,19 @@
-console.log('Environment check in chat route:');
-console.log('NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'present' : 'MISSING');
-console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'present' : 'MISSING');
 //src/app/api/chat/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '@/lib/supabase'; // ✅ Fixed import path
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Supabase is configured at runtime
+    if (!isSupabaseConfigured()) {
+      console.error('Supabase is not configured');
+      return NextResponse.json(
+        { error: 'Database configuration error' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { user, session, message, source } = body;
 
@@ -31,9 +37,8 @@ export async function POST(request: NextRequest) {
       token_count: message.token_count || message.message_text.split(' ').length
     };
 
-    // ✅ Fixed: Use proper Supabase syntax instead of storeMessage
     const { data: storedUserMessage, error: userMessageError } = await supabase
-      .from('messages') // Make sure this matches your table name
+      .from('messages')
       .insert(userMessage)
       .select()
       .single();
@@ -61,9 +66,8 @@ export async function POST(request: NextRequest) {
       token_count: aiResponse.split(' ').length
     };
 
-    // ✅ Fixed: Use proper Supabase syntax instead of storeMessage
     const { data: storedBotMessage, error: botMessageError } = await supabase
-      .from('messages') // Make sure this matches your table name
+      .from('messages')
       .insert(botMessage)
       .select()
       .single();
@@ -76,9 +80,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ✅ Fixed: Update session activity with proper Supabase syntax
     const { error: sessionUpdateError } = await supabase
-      .from('sessions') // Make sure this matches your table name
+      .from('sessions')
       .update({ 
         last_message_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -87,7 +90,6 @@ export async function POST(request: NextRequest) {
 
     if (sessionUpdateError) {
       console.error('Error updating session:', sessionUpdateError);
-      // Don't fail the request for session update errors
     }
 
     return NextResponse.json({
@@ -109,9 +111,6 @@ export async function POST(request: NextRequest) {
 }
 
 async function generateAIResponse(userMessage: string, user: any, session: any): Promise<string> {
-  // This is a placeholder AI response generator
-  // In a real implementation, you would integrate with Gemini, OpenAI, or another AI service
-  
   const responses = [
     `That's a great question, ${user.first_name}! Let me help you understand that better.`,
     `I can see you're working on something challenging. Let's break it down step by step.`,
@@ -120,7 +119,6 @@ async function generateAIResponse(userMessage: string, user: any, session: any):
     `Good observation! This relates to what we've been discussing about ${session.current_concept || 'your studies'}.`
   ];
 
-  // Simple keyword-based responses
   const lowerMessage = userMessage.toLowerCase();
   
   if (lowerMessage.includes('math') || lowerMessage.includes('calculate')) {
@@ -139,7 +137,6 @@ async function generateAIResponse(userMessage: string, user: any, session: any):
     return `I'd be happy to help you with your homework! Remember, I'm here to guide your learning, not give you direct answers. What subject is this for, and where would you like to start?`;
   }
 
-  // Default response
   const randomResponse = responses[Math.floor(Math.random() * responses.length)];
   return `${randomResponse} Could you provide more details about what you'd like to learn or any specific questions you have?`;
 }
