@@ -1,6 +1,5 @@
 //src/app/api/session/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
@@ -29,17 +28,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new session
+    // Create new session - let database generate session_id
     const newSession = {
-      session_id: uuidv4(),
       user_id,
       is_active: true,
       current_concept: null,
       concepts_covered: [],
-      started_at: new Date().toISOString(),
-      last_message_at: new Date().toISOString(),
       auto_extended_count: 0,
       session_timeout_hours: 24
+      // started_at, last_message_at, updated_at will be auto-generated
     };
 
     const { data: createdSession, error: createError } = await supabase
@@ -49,7 +46,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (createError) {
-      throw createError;
+      console.error('Supabase error creating session:', createError);
+      return NextResponse.json(
+        { error: createError.message || 'Failed to create session' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(createdSession, { status: 201 });
@@ -57,11 +58,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Session creation error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }
 }
+
 
 export async function GET(request: NextRequest) {
   try {

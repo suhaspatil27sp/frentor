@@ -18,6 +18,7 @@ export async function PATCH(
       .single();
 
     if (fetchError || !session) {
+      console.error('Session fetch error:', fetchError);
       return NextResponse.json(
         { error: 'Session not found' },
         { status: 404 }
@@ -31,14 +32,19 @@ export async function PATCH(
         .update({
           is_active: false,
           ended_at: new Date().toISOString(),
-          end_reason: body.end_reason
+          end_reason: body.end_reason,
+          updated_at: new Date().toISOString()
         })
         .eq('session_id', sessionId)
         .select()
         .single();
 
       if (updateError) {
-        throw updateError;
+        console.error('Session update error:', updateError);
+        return NextResponse.json(
+          { error: updateError.message || 'Failed to update session' },
+          { status: 500 }
+        );
       }
 
       return NextResponse.json(updatedSession);
@@ -46,7 +52,8 @@ export async function PATCH(
 
     // Handle other session updates
     const updates: any = {
-      last_message_at: new Date().toISOString()
+      last_message_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
     if (body.current_concept !== undefined) {
@@ -69,7 +76,11 @@ export async function PATCH(
       .single();
 
     if (updateError) {
-      throw updateError;
+      console.error('Session update error:', updateError);
+      return NextResponse.json(
+        { error: updateError.message || 'Failed to update session' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(updatedSession);
@@ -77,7 +88,7 @@ export async function PATCH(
   } catch (error) {
     console.error('Session update error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }
@@ -98,6 +109,7 @@ export async function DELETE(
       .single();
 
     if (fetchError || !session) {
+      console.error('Session fetch error:', fetchError);
       return NextResponse.json(
         { error: 'Session not found' },
         { status: 404 }
@@ -110,14 +122,19 @@ export async function DELETE(
       .update({
         is_active: false,
         ended_at: new Date().toISOString(),
-        end_reason: 'deleted'
+        end_reason: 'deleted',
+        updated_at: new Date().toISOString()
       })
       .eq('session_id', sessionId)
       .select()
       .single();
 
     if (updateError) {
-      throw updateError;
+      console.error('Session delete error:', updateError);
+      return NextResponse.json(
+        { error: updateError.message || 'Failed to end session' },
+        { status: 500 }
+      );
     }
     
     return NextResponse.json({ 
@@ -128,7 +145,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Session deletion error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

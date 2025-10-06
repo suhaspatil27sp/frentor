@@ -24,6 +24,15 @@ body {
     rgb(var(--background));
 }
 
+/* Fix for form inputs to have proper text color */
+input, textarea, select {
+  color: #1f2937 !important; /* Gray-800 for dark text */
+}
+
+input::placeholder, textarea::placeholder {
+  color: #9ca3af !important; /* Gray-400 for placeholder */
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
